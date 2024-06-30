@@ -1,8 +1,11 @@
 const functions = require("@google-cloud/functions-framework");
 const dotenv = require("dotenv");
+const express = require("express");
 dotenv.config();
 
 const ENV = require("./env.json");
+const app = express();
+app.use(express.json());
 
 async function getQuestionsAlreadyAsk() {
   const response = await fetch(
@@ -123,41 +126,34 @@ async function generateQuestionAndOptions() {
   }
 }
 
-functions.http("manageRoutes", async (req, res) => {
-  const path = req.path;
+app.get("/send-quizz", async (req, res) => {
+  const { question, options, correct_option_id } =
+    await generateQuestionAndOptions();
 
-  if (path === "/send-quizz") {
-    const { question, options, correct_option_id } =
-      await generateQuestionAndOptions();
-
-    if (question && options.length > 0) {
-      await createTelegramPoll(
-        ENV.bot_token,
-        ENV.groups[0].id,
-        question,
-        options,
-        correct_option_id
-      );
-    } else {
-      console.log("Impossible de générer la question ou les options.");
-    }
-
+  if (question && options.length > 0) {
+    await createTelegramPoll(
+      ENV.bot_token,
+      ENV.groups[0].id,
+      question,
+      options,
+      correct_option_id
+    );
     res.send({ question, options, correct_option_id });
-  } else if (path === "/create-quizz") {
-    try {
-      const { question, options, correct_option_id } =
-        await generateQuestionAndOptions();
-
-      res.send({
-        question,
-        options,
-        correct_option_id,
-      });
-    } catch (err) {
-      console.log(err);
-      res.status(500).send("Erreur lors de la génération du quizz.");
-    }
   } else {
-    res.status(404).send("Route non trouvée.");
+    console.log("Impossible de générer la question ou les options.");
+    res.status(500).send("Erreur lors de la génération du quizz.");
   }
 });
+
+app.get("/create-quizz", async (req, res) => {
+  try {
+    const { question, options, correct_option_id } =
+      await generateQuestionAndOptions();
+    res.send({ question, options, correct_option_id });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Erreur lors de la génération du quizz.");
+  }
+});
+
+functions.http("manageRoutes", app);
