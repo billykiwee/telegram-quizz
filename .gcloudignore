@@ -1,0 +1,18 @@
+# Ignore node_modules
+
+node_modules/
+
+# Ignore les répertoires temporaires et de build
+
+build/
+dist/
+tmp/
+
+# Ignore les fichiers de configuration locaux
+
+_.env
+_.log
+
+# Ignore les fichiers de gestion de versions
+
+.git/
