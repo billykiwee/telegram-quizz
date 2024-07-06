@@ -1,17 +1,18 @@
 const functions = require("@google-cloud/functions-framework");
 const dotenv = require("dotenv");
 const express = require("express");
-dotenv.config();
-
 const ENV = require("./env.json");
 const app = express();
+
+dotenv.config();
 app.use(express.json());
 
-async function getQuestionsAlreadyAsk() {
+async function getQuestionsAlreadyAsked() {
   const response = await fetch(
     `https://api.telegram.org/bot${ENV.bot_token}/getUpdates`
   );
   const { result } = await response.json();
+
   return result.map((o) => o.poll?.question).filter(Boolean);
 }
 
@@ -43,7 +44,7 @@ async function createTelegramPoll(
 }
 
 async function generateQuestionAndOptions() {
-  const previousQuestions = await getQuestionsAlreadyAsk();
+  const previousQuestions = await getQuestionsAlreadyAsked();
 
   const prompt = `
   Génère une question de sondage sur la programmation avec des options de réponse. 
@@ -111,22 +112,24 @@ async function generateQuestionAndOptions() {
     });
 
     const responseData = await response.text();
+    console.log({ responseData });
     const data = JSON.parse(responseData);
     const generatedContent = data.choices[0].message.content.trim();
 
     const { question, options, correct_option_id } =
       JSON.parse(generatedContent);
+
     return { question, options, correct_option_id };
   } catch (error) {
     console.error(
       "Erreur lors de la génération de la question avec ChatGPT:",
       error
     );
-    return { question: null, options: [] };
+    return { error, question: null, options: [] };
   }
 }
 
-app.get("/send-quizz", async (req, res) => {
+app.get("/send", async (req, res) => {
   const { question, options, correct_option_id } =
     await generateQuestionAndOptions();
 
@@ -145,7 +148,7 @@ app.get("/send-quizz", async (req, res) => {
   }
 });
 
-app.get("/create-quizz", async (req, res) => {
+app.get("/create", async (req, res) => {
   try {
     const { question, options, correct_option_id } =
       await generateQuestionAndOptions();
@@ -156,4 +159,4 @@ app.get("/create-quizz", async (req, res) => {
   }
 });
 
-functions.http("manageRoutes", app);
+functions.http("quizz", app);

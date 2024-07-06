@@ -19,6 +19,6 @@ gcloud functions deploy telegram-quizz \
   --runtime nodejs20 \
   --trigger-http \
   --allow-unauthenticated \
-  --entry-point=manageRoutes \
+  --entry-point=quizz \
   --region=us-central1
 ```
